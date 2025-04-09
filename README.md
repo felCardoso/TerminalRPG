@@ -1,6 +1,6 @@
-# 🐉 Dungeon Awakening RPG
+# 🐉 Dungeon Awakening RPG - Terminal
 
-Um RPG de texto por turnos com progressão de personagem, combates em dungeon e sistema de save/load em JSON. Inspirado por títulos como *Solo Leveling* e *Omniscient Reader’s Viewpoint*, esse projeto é focado em aprendizado de Python orientado a objetos e foi feito com a ajuda do ChatGPT com ideias e dúvidas.
+Um RPG de texto por turnos com progressão de personagem, combates em dungeon e sistema de save/load em JSON. Inspirado por títulos como *Solo Leveling* e *Omniscient Reader’s Viewpoint*, esse projeto é focado em aprendizado de Python orientado a objetos e foi feito com a ajuda do ChatGPT com ideias, dúvidas e este README :).
 
 ---
 
