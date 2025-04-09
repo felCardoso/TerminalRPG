@@ -1,142 +1,91 @@
-from src.player import Player
-import json
 import os
+import time
+from src.player import Player
+from src.enemy import Enemy
+from src.fight import Fight
+from src.utils import Colors, SaveManager, clear_screen, type_text
+
+sm = SaveManager()
 
 
-class Game:
-    def __init__(self) -> None:
-        self.day = 0
-        self.player = None
-        self.save = None
-
-    def explore(self) -> None:  # Temp
-        self.loop()
-
-    def inventory(self) -> None:  # Temp
-        self.loop()
-
-    def start(self) -> None:
-        self.menu_start()
-        self.loop()
-
-    def loop(self) -> None:
-        self.clear_screen()
-
-        print(f"[Dia {self.day}]")
-        print("[1] Explorar")
-        print("[2] Inventário")
-        print("[3] Status")
-        print("[9] Salvar Jogo")
-        print("[0] Sair")
-
-        opt = input("> ")
-
-        if opt == "1":
-            self.explore()
-        elif opt == "2":
-            self.inventory()
-            self.loop()
-        elif opt == "3":
-            self.clear_screen()
-            print(self.player)
-            input("[Enter] Voltar")
-            self.loop()
-        elif opt == "0":
-            print("[i] Salvar jogo? (s/n)")
-            opt = input("> ").lower()
-            if opt == "s":
-                self.clear_screen()
-                print("[i] Salvando jogo...")
-                self.save_game()
-                print("[i] Jogo salvo com sucesso!")
-                input("[Enter] Sair")
-                exit(0)
-            elif opt == "n":
-                exit(0)
-            else:
-                self.clear_screen()
-                print("[x] Opção Inválida.")
-                input("[Enter] Voltar")
-                self.loop()
-        elif opt == "9":
-            self.clear_screen()
-            print("[i] Salvando jogo...")
-            self.save_game()
-            print("[i] Jogo salvo com sucesso!")
-            input("[Enter] Voltar")
-            self.loop()
-        else:
-            self.clear_screen()
-            print("[x] Opção Inválida.")
-            input("[Enter] Voltar")
-            self.loop()
-
-    def menu_start(self) -> None:
-        self.clear_screen()
-
-        print("Bem-vindo ao RPG!")
-        print("[1] Novo Jogo")
-        print("[2] Carregar Jogo")
+def main_menu():
+    while True:
+        clear_screen()
+        print(f"{Colors.MAG}🎮 DUNGEON AWAKENING RPG\n")
+        print(f"{Colors.WHI}[1] Novo Jogo")
+        print("[2] Continuar")
         print("[3] Sair")
+        i = input("\nEscolha uma opção:\n> ")
 
-        opt = input("> ")
-
-        if opt == "1":
-            self.new_game()
-        elif opt == "2":
-            self.load_game()
-        elif opt == "3":
-            exit(0)
+        if i == "1":
+            clear_screen()
+            slot = sm.select_slot(new=True)
+            if slot:
+                new_game(slot)
+        elif i == "2":
+            clear_screen()
+            slot = sm.select_slot(new=False)
+            if slot:
+                continue_game(slot)
+        elif i == "3":
+            print("Até logo, caçador!")
+            break
         else:
-            self.clear_screen()
-            print("[x] Opção Inválida.")
-            input("[Enter] Voltar")
-            self.menu_start()
+            clear_screen()
+            print(f"{Colors.RED}[x] Escolha inválida!")
+            time.sleep(1)
+            input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
 
-    def new_game(self) -> None:
-        self.clear_screen()
-        name = input("Digite o nome do seu personagem:\n> ")
-        self.player = Player(name=name)
-        self.player.title = ", o Iniciante"
 
-    def load_game(self) -> None:
-        with open("save.json", "r") as file:
-            data = json.load(file)
-            self.player = Player(name=data["name"])
-            self.player.att = data["att"]
-            self.player.lvl = data["lvl"]
-            self.player.xp = data["xp"]
-            self.player.coins = data["coins"]
-            self.player.hp = data["hp"]
-            self.player.mp = data["mp"]
-            self.player.inv = data["inv"]
-            self.player.equip = data["equip"]
-            self.player.title = data["title"]
+def new_game(slot_file):
+    clear_screen()
+    name = input("Digite o nome do seu personagem: ")
+    player = Player(name)
+    sm.save(player, os.path.basename(slot_file))
+    start_adventure(player, slot_file)
 
-            self.day = data["day"]
 
-    def save_game(self) -> None:  # Temp
-        data = {
-            "name": self.player.name,
-            "att": self.player.att,
-            "lvl": self.player.lvl,
-            "xp": self.player.xp,
-            "coins": self.player.coins,
-            "hp": self.player.hp,
-            "mp": self.player.mp,
-            "inv": self.player.inv,
-            "equip": self.player.equip,
-            "title": self.player.title,
-            "day": self.day,
-        }
+def continue_game(slot_file):
+    try:
+        data = sm.load(slot_file)
+        player = Player.from_dict(data)
+        start_adventure(player, slot_file)
+    except FileNotFoundError:
+        print(f"{Colors.RED}[x] Arquivo de save não encontrado!\n")
+        time.sleep(1)
+        input(f"{Colors.LBLU}[i] Pressione Enter para voltar ao menu principal.")
+        main_menu()
 
-        with open("save.json", "w") as file:
-            json.dump(data, file, indent=4)
 
-    def clear_screen(self) -> None:
-        os.system("cls" if os.name == "nt" else "clear")
+def start_adventure(player, slot_file):
+    while True:
+        clear_screen()
+        print(f"{player.name} entra na dungeon...\n")
+        print("O que você deseja fazer?")
+        print(f"{Colors.LBLU}1. Explorar (combate)")
+        print(f"2. Ver status do personagem")
+        print(f"3. Salvar e sair")
+        choice = input("> ")
+
+        if choice == "1":
+            clear_screen()
+            enemy = Enemy("Goblin", 20, 3, 10, 5)
+            fight = Fight()
+            fight.start(player, enemy)
+        elif choice == "2":
+            clear_screen()
+            print(player)
+            input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
+        elif choice == "3":
+            clear_screen()
+            sm.save(player, os.path.basename(slot_file))
+            print("Saindo para o menu principal...")
+            time.sleep(1)
+            break
+        else:
+            clear_screen()
+            print(f"{Colors.RED}[x] Escolha inválida!")
 
 
 if __name__ == "__main__":
-    game = Game()
-    game.start()
+    main_menu()
