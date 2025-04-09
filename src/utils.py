@@ -38,8 +38,8 @@ def type_text(text, delay=0.03):
 
 def show_intro():
     clear_screen()
-    print(f"{Fore.MAGENTA}DUNGEON AWAKENING RPG")
-    print(f"{Fore.CYAN} ")
+    print(f"{Fore.MAG}DUNGEON AWAKENING RPG")
+    print(f"{Fore.CYA} ")
     type_text("Welcome to the Dungeon Awakening RPG!", delay=0.05)
     time.sleep(1)
 
@@ -94,7 +94,7 @@ class SaveManager:
 
         if new and os.path.exists(slot_path):
             overwrite = input(
-                "\nEsse slot já contém um jogo salvo. Deseja sobrescrever? [s/n]\n> "
+                "\n[i] Esse slot já contém um jogo salvo. Deseja sobrescrever? [s/n]\n> "
             ).lower()
             if overwrite != "s":
                 return None
@@ -113,7 +113,7 @@ class SaveManager:
     def save(self, player, slot_path):
         with open(slot_path, "w") as f:
             json.dump(player.to_dict(), f, indent=4)
-        print(f"\n{Colors.SUCCESS}💾 Progresso salvo com sucesso!{Colors.RESET}")
+        print(f"\n{Colors.GRE}💾 Progresso salvo com sucesso!{Colors.RESET}")
 
     def save_progress(player, slot_file):
         with open(slot_file, "w") as f:
