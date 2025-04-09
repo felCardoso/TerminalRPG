@@ -22,15 +22,15 @@ DungeonRPG/
 ├── data/
 │   └── data.json
 │
+├── saves/                # Diretório de saves automáticos
+│
 ├── src/
 │   ├── player.py         # Classe Player e funcionalidades
 │   ├── enemy.py          # Classe Enemy
 │   ├── fight.py          # Combate entre jogador e inimigo
 │   └── utils.py          # Funções utilitárias e SaveManager
 │
-├── saves/                # Diretório de saves automáticos
-│
-├── main.py               # Menu principal e loop do jogo
+├── game.py               # Menu principal e loop do jogo
 ├── README.md
 └── requirements.txt      # Bibliotecas necessárias
 ```
