@@ -1,108 +1,472 @@
-from colorama import Fore, Style
-from src.utils import Colors
-import os
+from src.utils import ABILITIES, Colors, clear_screen
+from time import sleep
 
 
 class Player:
     def __init__(self, name):
-        self.name = name
-        self.level = 1
-        self.exp = 0
+        self.name = name  # Player name
+        self.level = 1  # Player level
+        self.xp = 0  # Player experience points
 
-        self.class_type = None
-        self.skills = []
-        self.money = 100
-        self.attributes = {"STR": 5, "AGI": 5, "VIT": 5, "INT": 5}
+        self.days = 0  # Count of days in game
+        self.hours = 0  # Count of hours in game
 
-        self.hp_max = self.attributes["VIT"] * 10
-        self.hp = self.hp_max
-        self.mp_max = self.attributes["INT"] * 10
-        self.mp = self.mp_max
+        self.local = "Starting Town"  # Actual location
 
-        self.inventory = {
+        self.coins = 100  # Balance
+        self.attributes = {"STR": 5, "AGI": 5, "VIT": 5, "INT": 5}  # Attributes
+
+        self.hp_max = self.attributes["VIT"] * 10  # Max HP
+        self.hp = self.hp_max  # Health Points
+        self.mp_max = self.attributes["INT"] * 10  # Max MP
+        self.mp = self.mp_max  # Mana Points
+        self.df = 0  # Defence
+
+        self.inventory = {  # Player inventory
             "items": [],
             "weapons": [],
             "armors": [],
             "potions": [],
         }
 
-        self.equipment = {
+        self.equipment = {  # Player equipped items
             "weapon": None,
             "armor": None,
             "accessories": [None, None],
         }
-        self.affinity = {
-            "sword": 0,
-            "shield": 0,
-            "magic": 0,
-            "summon": 0,
-            "bow": 0,
-        }
+        self.abilities = {}  # Player habilities
 
-    def use_action(self, action):
-        if action in self.affinity:
-            self.affinity[action] += 1
-            print(f"{self.name} used {action}! Affinity increased.")
-        else:
-            print("Invalid action.")
+    # Combat methods
+    def take_damage(self, damage):
+        df = 0
+        if self.equipment["armor"] is not None:
+            df = self.equipment["armor"]["effect"]["dfc"]
+        if self.equipment["accessories"][0] is not None:
+            if "dfc" in self.equipment["accessories"][0]["effect"]:
+                df += self.equipment["accessories"][0]["effect"]["dfc"]
+        if self.equipment["accessories"][1] is not None:
+            if "dfc" in self.equipment["accessories"][1]["effect"]:
+                df += self.equipment["accessories"][1]["effect"]["dfc"]
 
-    def gain_exp(self, amount):
-        self.exp += amount
-        print(f"{self.name} gained {amount} EXP.")
-        while self.exp >= self.level * 100:
-            self.exp -= self.level * 100
+        dmg = max(damage - (self.df + df), 0)
+        self.hp -= dmg
+        if self.hp < 0:
+            self.hp = 0
+        return dmg
+
+    def heal(self, amount):
+        self.hp += amount
+        if self.hp > self.hp_max:
+            self.hp = self.hp_max
+
+    def restore_mp(self, amount):
+        self.mp += amount
+        if self.mp > self.mp_max:
+            self.mp = self.mp_max
+
+    # Miscellaneous methods
+    def pass_time(self, hours):
+        self.hours += hours
+        if self.hours >= 24:
+            self.days += self.hours // 24
+            self.hours = self.hours % 24
+        if self.hours < 0:
+            self.days -= abs(self.hours) // 24
+            self.hours = 24 - abs(self.hours) % 24
+
+    def sleep(self, hours):
+
+        self.hp_max = self.attributes["VIT"] * 5
+        self.mp_max = self.attributes["INT"] * 10
+
+        try:
+            time = int(hours)
+        except ValueError:
+            print(f"{Colors.RED}[x] Invalid input.")
+            return
+        if time <= 0:
+            print(f"{Colors.RED}[x] Invalid sleep hours.")
+            return
+        if time > 24:
+            print(f"{Colors.RED}[x] You can't sleep more than 24 hours.")
+            return
+        self.pass_time(time)
+        self.hp += time * self.attributes["VIT"] * 2
+        self.mp += time * self.attributes["INT"] * 2
+        if self.hp > self.hp_max:
+            self.hp = self.hp_max
+        if self.mp > self.mp_max:
+            self.mp = self.mp_max
+        for i in range(time):
+            print(f"{Colors.LBLU}⏳ Sleeping... {Colors.RESET}", end="\r")
+            sleep(1)
+        input(f"{Colors.LBLU}[i] Pressione Enter para continuar")
+
+    # Add methods
+    def add_xp(self, amount):
+        self.xp += amount
+        print(f"{self.name} gained {amount}xp")
+        while self.xp >= self.level * 100:
+            self.xp -= self.level * 100
             self.level += 1
             self.attributes["STR"] += 1
             self.attributes["AGI"] += 1
             self.attributes["VIT"] += 2
             self.attributes["INT"] += 1
+
+            self.hp_max = self.attributes["VIT"] * 5
+            self.mp_max = self.attributes["INT"] * 10
+
+            self.hp = self.hp * int(
+                (self.hp_max / self.hp)
+            )  # Keep the proportional amount of hp
+            self.mp = self.mp * int(
+                (self.mp_max / self.mp)
+            )  # Keep the proportional amount of mp
+
             print(f"⭐ {self.name} leveled up to level {self.level}!")
 
-    def gain_money(self, amount):
-        self.money += amount
-        print(f"{self.name} gained {amount} G. Total: {self.money} G.")
+    def add_coin(self, amount):
+        self.coins += amount
+        print(f"{self.name} gained {amount}c")
 
-    def check_class(self):
-        most_used = max(self.affinity, key=self.affinity.get)
-        value = self.affinity[most_used]
-        if value < 5:
-            print("No combat style defined yet.")
+    def add_item(self, item, category):
+        if category not in self.inventory:
+            print(f"{Colors.RED}[x] Invalid category.")
             return
-        class_map = {
-            "sword": "Swordsman",
-            "shield": "Tank",
-            "magic": "Mage",
-            "summon": "Summoner",
-            "bow": "Archer",
-        }
-        self.class_type = class_map.get(most_used, None)
-        print(f"🎉 Class awakened: {self.class_type}!")
+        if category == "weapons":
+            self.inventory["weapons"].append(item)
+        elif category == "armors":
+            self.inventory["armors"].append(item)
+        elif category == "potions":
+            self.inventory["potions"].append(item)
+        elif category == "items":
+            self.inventory["items"].append(item)
 
+    def add_ability(self, ability):
+        if ability not in self.abilities:
+            self.abilities[ability] = ABILITIES[ability]
+            self.abilities[ability]["lvl"] = 1
+            self.abilities[ability]["xp"] = 0
+            self.abilities[ability]["xp_max"] = 100
+            self.abilities[ability]["lvl_max"] = 10
+            print(f"{self.name} learned {ability}!")
+        else:
+            self.abilities[ability]["xp"] += 50
+            print(f"{self.name} ganhou 50xp em {ability}.")
+
+    # List methods
+    def list_abilities(self):
+        i = 0
+        for ability in self.abilities.items():
+            if "dmg" in ability:
+                print(
+                    f"{Colors.LBLU}  {ability} - Dano: {ability['dmg']} | {ability['cost']} MP"
+                )
+            elif "heal" in ability:
+                print(
+                    f"{Colors.LBLU}  {ability} - Cura: {ability['heal']} | {ability['cost']} MP"
+                )
+            else:
+                print(
+                    f"{Colors.LBLU}  {ability} - {ability['xp']}/{ability['xp_max']} | {ability['cost']} MP"
+                )
+            i += 1
+        if i == 0:
+            print(f"{Colors.RED}  Nenhuma habilidade aprendida.")
+        print(f"{Colors.RESET}")
+
+    def show_inventory(self, use=False):
+        clear_screen()
+        print(f"{Colors.LBLU}==== Inventory ====")
+        print(f"{Colors.GRE}  Balance: {self.coins}c")
+
+        self.list_potions()  # Exibir poções
+        self.list_items()  # Exibir itens
+        self.list_weapons()  # Exibir armas
+        self.list_armor()  # Exibir armaduras
+
+        print(f"{Colors.WHI}====================")
+
+        if use:
+            opt = input(f"{Colors.LBLU}Would you like to use an item? (y/n):\n>")
+            if opt.lower() == "y" or opt.lower() == "yes" or opt.lower() == "s":
+                print(f"{Colors.LBLU}Select a category to use an item:\n")
+                print(f"{Colors.GRE}[1] Potions")
+                print(f"{Colors.CYA}[2] Items")
+                print(f"{Colors.MAG}[3] Weapons")
+                print(f"{Colors.RED}[4] Armor")
+                category = input(f"{Colors.CYA}\n> ")
+
+                if category == "0":
+                    return
+                elif category == "1":
+                    self.list_potions()
+                    item_index = input("Choose a potion by its number:\n> ")
+                    try:
+                        item_index = int(item_index) - 1
+                        if 0 <= item_index < len(self.inventory["potions"]):
+                            selected_item = self.inventory["potions"][item_index]
+                            self.use_item(selected_item, player=self)
+                        else:
+                            print(f"{Colors.RED}[x] Invalid potion number.")
+                    except ValueError:
+                        print(f"{Colors.RED}[x] Invalid input.")
+                elif category == "2":
+                    self.list_items()
+                    item_index = input("Choose an item by its number:\n> ")
+                    try:
+                        item_index = int(item_index) - 1
+                        if 0 <= item_index < len(self.inventory["items"]):
+                            selected_item = self.inventory["items"][item_index]
+                            self.use_item(selected_item, player=self)
+                        else:
+                            print(f"{Colors.RED}[x] Invalid item number.")
+                    except ValueError:
+                        print(f"{Colors.RED}[x] Invalid input.")
+                elif category == "3":
+                    self.list_weapons()
+                    item_index = input("Choose a weapon by its number:\n> ")
+                    try:
+                        item_index = int(item_index) - 1
+                        if 0 <= item_index < len(self.inventory["weapons"]):
+                            selected_item = self.inventory["weapons"][item_index]
+                            self.equip_weapon(selected_item)
+                        else:
+                            print(f"{Colors.RED}[x] Invalid weapon number.")
+                    except ValueError:
+                        print(f"{Colors.RED}[x] Invalid input.")
+                elif category == "4":
+                    self.list_armor()
+                    item_index = input("Choose an armor by its number:\n> ")
+                    try:
+                        item_index = int(item_index) - 1
+                        if 0 <= item_index < len(self.inventory["armors"]):
+                            selected_item = self.inventory["armors"][item_index]
+                            self.equip_armor(selected_item)
+                        else:
+                            print(f"{Colors.RED}[x] Invalid armor number.")
+                    except ValueError:
+                        print(f"{Colors.RED}[x] Invalid input.")
+                elif category == "5":
+                    self.list_accessories()
+                    item_index = input("Choose an accessory by its number:\n> ")
+                    try:
+                        item_index = int(item_index) - 1
+                        if 0 <= item_index < len(self.inventory["accessories"]):
+                            selected_item = self.inventory["accessories"][item_index]
+                            self.equip_accessory(selected_item)
+                        else:
+                            print(f"{Colors.RED}[x] Invalid accessory number.")
+                    except ValueError:
+                        print(f"{Colors.RED}[x] Invalid input.")
+                else:
+                    print(f"{Colors.RED}[x] Invalid category!")
+            elif opt.lower() == "n" or opt.lower() == "no":
+                print(f"{Colors.GRE}Exiting inventory...")
+                sleep(1)
+                return
+            else:
+                print(f"{Colors.RED}[x] Invalid option!")
+        print(f"{Colors.RESET}")
+
+    def list_potions(self):
+        print(f"{Colors.WHI}  Potions:")
+        potion_counts = {}
+        for potion in self.inventory["potions"]:
+            potion_counts[potion["name"]] = potion_counts.get(potion["name"], 0) + 1
+        for name, count in potion_counts.items():
+            print(f"    {name} x{count}")
+
+    def list_items(self):
+        print(f"{Colors.GRE}  Items:")
+        item_counts = {}
+        for item in self.inventory["items"]:
+            item_counts[item["name"]] = item_counts.get(item["name"], 0) + 1
+        for name, count in item_counts.items():
+            print(f"    {name} x{count}")
+
+    def list_weapons(self):
+        print(f"{Colors.MAG}  Weapons:")
+        weapon_counts = {}
+        for weapon in self.inventory["weapons"]:
+            weapon_counts[weapon["name"]] = weapon_counts.get(weapon["name"], 0) + 1
+        for name, count in weapon_counts.items():
+            print(f"    {name} x{count}")
+
+    def list_armor(self):
+        print(f"{Colors.CYA}  Armors:")
+        armor_counts = {}
+        for armor in self.inventory["armors"]:
+            armor_counts[armor["name"]] = armor_counts.get(armor["name"], 0) + 1
+        for name, count in armor_counts.items():
+            print(f"    {name} x{count}")
+
+    def list_accessories(self):
+        print(f"{Colors.LBLU}  Accessories:")
+        accessory_counts = {}
+        for accessory in self.inventory["accessories"]:
+            accessory_counts[accessory["name"]] = (
+                accessory_counts.get(accessory["name"], 0) + 1
+            )
+        for name, count in accessory_counts.items():
+            print(f"    {name} x{count}")
+
+    # Equip methods
+    def equip_weapon(self, weapon):
+        if weapon in self.inventory["weapons"]:
+            self.unequip_weapon()
+            self.equipment["weapon"] = weapon
+            self.inventory["weapons"].remove(weapon)
+            print(f"{self.name} equipou {weapon}.")
+        else:
+            print(f"{Colors.RED}[x] Arma não encontrada na mochila.")
+
+    def equip_armor(self, armor):
+        if armor in self.inventory["armors"]:
+            self.unequip_armor()
+            self.equipment["armor"] = armor
+            self.inventory["armors"].remove(armor)
+            print(f"{self.name} equipou {armor}.")
+        else:
+            print(f"{Colors.RED}[x] Armadura não encontrada na mochila.")
+
+    def equip_accessory(self, accessory):
+        if accessory in self.inventory["accessories"]:
+            for i in range(2):
+                if self.equipment["accessories"][i] is None:
+                    self.equipment["accessories"][i] = accessory
+                    self.inventory["accessories"].remove(accessory)
+                    print(f"{self.name} equipou {accessory}.")
+                    return
+            print(f"{Colors.RED}[x] Não há espaço para mais acessórios.")
+        else:
+            print(f"{Colors.RED}[x] Acessório não encontrado na mochila.")
+
+    # Unequip methods
+    def unequip_weapon(self):
+        if self.equipment["weapon"] is not None:
+            self.inventory["weapons"].append(self.equipment["weapon"])
+            print(f"{self.name} removeu {self.equipment['weapon']}.")
+            self.equipment["weapon"] = None
+        # else:
+        #     print(f"{Colors.RED}[x] Nenhuma arma equipada.")
+
+    def unequip_armor(self):
+        if self.equipment["armor"] is not None:
+            self.inventory["armors"].append(self.equipment["armor"])
+            print(f"{self.name} removeu {self.equipment['armor']}.")
+            self.equipment["armor"] = None
+        # else:
+        #     print(f"{Colors.RED}[x] Nenhuma armadura equipada.")
+
+    def unequip_accessory(self, accessory):
+        if accessory in self.equipment["accessories"]:
+            self.inventory["accessories"].append(accessory)
+            print(f"{self.name} removeu {accessory}.")
+            for i in range(2):
+                if self.equipment["accessories"][i] == accessory:
+                    self.equipment["accessories"][i] = None
+                    return
+        # else:
+        #     print(f"{Colors.RED}[x] Acessório não encontrado na mochila.")
+
+    # Use methods
+    def use_item(self, item, enemy=None, player=None):
+        if item in self.inventory["potions"]:
+            if "heal" in item["effect"]:
+                self.heal(item["effect"]["heal"])
+                print(
+                    f"{self.name} usou {item['name']} e curou {item['effect']['heal']} HP!"
+                )
+            elif "mp" in item["effect"]:
+                self.restore_mp(item["effect"]["mp"])
+                print(
+                    f"{self.name} usou {item['name']} e restaurou {item['effect']['mp']} MP!"
+                )
+            self.inventory["potions"].remove(item)
+        elif item in self.inventory["items"]:
+            if "dmg" in item["effect"] and enemy:
+                enemy.take_damage(item["effect"]["dmg"])
+                print(
+                    f"{self.name} usou {item['name']} e causou {item['effect']['dmg']} de dano em {enemy.name}!"
+                )
+            elif "heal" in item["effect"] and player:
+                player.heal(item["effect"]["heal"])
+                print(
+                    f"{self.name} usou {item['name']} e curou {item['effect']['heal']} HP!"
+                )
+            self.inventory["items"].remove(item)
+
+    # Dict method
     def to_dict(self):
-        return self.__dict__
+        data = self.__dict__.copy()
+        if hasattr(self, "house"):
+            data["house"] = self.house.to_dict()
+        return data
 
+    # Boolean check methods
     def is_alive(self):
         return self.hp > 0
 
+    def has_weapon(self) -> bool:
+        return self.equipment["weapon"] is not None
+
+    def has_armor(self) -> bool:
+        return self.equipment["armor"] is not None
+
+    def has_accessory(self) -> bool:
+        return (
+            self.equipment["accessories"][0] is not None
+            or self.equipment["accessories"][1] is not None
+        )
+
+    # Class methods
     @classmethod
     def from_dict(cls, data):
         player = cls(data["name"])
+        if "house" in data:
+            from src.house import House
+
+            player.house = House.from_dict(data["house"], player)
         player.__dict__.update(data)
         return player
 
     def __str__(self):
-        os.system("cls" if os.name == "nt" else "clear")
+        clear_screen()
+
+        # Formatar equipamento
+        weapon = (
+            f"{self.equipment['weapon']['name']} (Dano: {self.equipment['weapon']['effect']['dmg']})"
+            if self.equipment["weapon"]
+            else "None"
+        )
+        armor = (
+            f"{self.equipment['armor']['name']} [Defesa: {self.equipment['armor']['effect']['dfc']}]"
+            if self.equipment["armor"]
+            else "None"
+        )
+        accessories = []
+        for accessory in self.equipment["accessories"]:
+            if accessory:
+                accessories.append(
+                    f"{accessory['name']} (Efeito: {', '.join([f'{k}: {v}' for k, v in accessory['effect'].items()])})"
+                )
+            else:
+                accessories.append("None")
+
         return (
-            f"{Colors.CYA}👤 Name: {self.name}\n"
-            f"{Colors.YEL}⭐ Level: {self.level} | EXP: {self.exp}/{self.level * 100}\n"
-            f"{Colors.MAG}🏹 Class: {self.class_type}\n"
-            f"{Colors.GRE}💰 Money: {self.money} G\n"
+            f"{Colors.CYA}👤 Name: {self.name} {Colors.RESET}| {Colors.RED}HP: [{self.hp}/{self.hp_max}]\n"
+            f"{Colors.YEL}⭐ Level: {self.level} {Colors.RESET}| {Colors.YEL}EXP: {self.xp}/{self.level * 100}\n"
+            f"{Colors.GRE}💰 Money: {self.coins}c\n"
             f"{Colors.BLU}📊 Attributes:\n"
             f"  STR: {self.attributes['STR']}  AGI: {self.attributes['AGI']}  "
             f"VIT: {self.attributes['VIT']}  INT: {self.attributes['INT']}\n"
             f"{Colors.WHI}🛡 Equipped:\n"
-            f"  Weapon: {self.equipment['weapon']}\n"
-            f"  Armor: {self.equipment['armor']}\n"
-            f"  Accessories: {self.equipment['accessories']}\n"
+            f"  Weapon: {weapon}\n"
+            f"  Armor: {armor}\n"
+            f"  Accessories:\n"
+            f"    1. {accessories[0]}\n"
+            f"    2. {accessories[1]}\n"
             f"{Colors.RESET}"
         )
