@@ -85,7 +85,7 @@ python game.py
 - [ ] Menu de Configurações
 - [ ] Salvamento automático ao final de cada luta (Habilitável)
 - [ ] Sistema de habilidades ativas e passivas
-- [ ] 
+- [ ] Melhorias no sistema de Housing
 
 ---
 
