@@ -1,4 +1,4 @@
-# Dungeon RPG - Terminal
+# Dungeon RPG (Terminal Game em Python)
 
 Um RPG de texto por turnos com progressão de personagem, combates em dungeon e sistema de save/load em JSON. Esse projeto é focado em aprendizagem de Python orientado a objetos e foi feito com a ajuda do ChatGPT com ideias, dúvidas e este README :).
 
@@ -13,7 +13,7 @@ Um RPG de texto por turnos com progressão de personagem, combates em dungeon e 
 - ⏳ Sistema de passagem de tempo e deslocamento para as dungeons
 - 💼 Inventário e equipamentos
 - 🪙 Sistema de moedas e loja
-- 🏠 Sistema de criação de casa e ugrades
+- 🏠 Sistema de criação de casa e upgrades
 - 🗃️ Sistema de salvamento e carregamento de progresso (3 slots)
 - 🛠️ Sistema modular de arquivos para facilitar a expansão do jogo
 
@@ -24,7 +24,7 @@ Um RPG de texto por turnos com progressão de personagem, combates em dungeon e 
 ```
 DungeonRPG/
 │
-├── saves/                # Diretório de saves automáticos
+├── saves/                # Diretório de saves
 │
 ├── src/
 │   ├── enemy.py          # Classe Enemy e Dungeon e Subclasse Boss
@@ -86,6 +86,7 @@ python game.py
 - [ ] Salvamento automático ao final de cada luta (Habilitável)
 - [ ] Sistema de habilidades ativas e passivas
 - [ ] Melhorias no sistema de Housing
+- [ ] Exemplo de execução do jogo no README / Badges (Linguagem, Licença e Status de Build) para tornar o README mais visual
 
 ---
 
