@@ -1,16 +1,21 @@
-# 🐉 Dungeon Awakening RPG - Terminal
+# Dungeon RPG - Terminal
 
-Um RPG de texto por turnos com progressão de personagem, combates em dungeon e sistema de save/load em JSON. Inspirado por títulos como *Solo Leveling* e *Omniscient Reader’s Viewpoint*, esse projeto é focado em aprendizado de Python orientado a objetos e foi feito com a ajuda do ChatGPT com ideias, dúvidas e este README :).
+Um RPG de texto por turnos com progressão de personagem, combates em dungeon e sistema de save/load em JSON. Esse projeto é focado em aprendizagem de Python orientado a objetos e foi feito com a ajuda do ChatGPT com ideias, dúvidas e este README :).
 
 ---
 
 ## 🎮 Funcionalidades
 
-- 🧙 Criação de personagem com evolução de atributos e classes  
-- ⚔️ Combate baseado em turnos contra inimigos  
-- 💼 Inventário e equipamentos  
-- 🗃️ Sistema de salvamento e carregamento de progresso (3 slots)  
-- 🛠️ Sistema modular de arquivos para facilitar a expansão do jogo  
+- 🧙 Criação de personagem com evolução de atributos
+- ⚔️ Combate baseado em turnos contra inimigos
+- 🔥 Habilidades de combate
+- 🧌 Dungeons, bosses, inimigos e itens para encontrar
+- ⏳ Sistema de passagem de tempo e deslocamento para as dungeons
+- 💼 Inventário e equipamentos
+- 🪙 Sistema de moedas e loja
+- 🏠 Sistema de criação de casa e ugrades
+- 🗃️ Sistema de salvamento e carregamento de progresso (3 slots)
+- 🛠️ Sistema modular de arquivos para facilitar a expansão do jogo
 
 ---
 
@@ -19,39 +24,37 @@ Um RPG de texto por turnos com progressão de personagem, combates em dungeon e 
 ```
 DungeonRPG/
 │
-├── data/
-│   └── data.json
-│
 ├── saves/                # Diretório de saves automáticos
 │
 ├── src/
-│   ├── player.py         # Classe Player e funcionalidades
-│   ├── enemy.py          # Classe Enemy
+│   ├── enemy.py          # Classe Enemy e Dungeon e Subclasse Boss
 │   ├── fight.py          # Combate entre jogador e inimigo
-│   └── utils.py          # Funções utilitárias e SaveManager
+│   ├── house.py          # Classe House e funções da casa
+│   ├── player.py         # Classe Player e funcionalidades
+│   └── utils.py          # Funções utilitárias, SaveManager e Constantes
 │
-├── game.py               # Menu principal e loop do jogo
+├── game.py               # Menus e loop principal do jogo
 ├── README.md
 └── requirements.txt      # Bibliotecas necessárias
 ```
 
 ---
 
-## 🚀 Como Rodar
+## 🚀 Como Executar o jogo
 
 1. **Clone o repositório:**
 
 ```bash
-git clone https://github.com/seu-usuario/DungeonAwakening.git
-cd DungeonAwakening
+git clone https://github.com/felCardoso/TerminalRPG.git
+cd TerminalRPG
 ```
 
 2. **Crie um ambiente virtual (recomendado):**
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+python -m venv rpg-venv
+rpg-venv\Scripts\activate     # Windows
+source rpg-venv/bin/activate  # Linux/Mac
 ```
 
 3. **Instale as dependências:**
@@ -63,7 +66,7 @@ pip install -r requirements.txt
 4. **Inicie o jogo:**
 
 ```bash
-python src/main.py
+python game.py
 ```
 
 ---
@@ -77,12 +80,12 @@ python src/main.py
 
 ## ✅ Próximas melhorias (to-do)
 
-- [ ] Sistema de loja com rotação de estoque  
-- [ ] Crafting: fundir 3 itens iguais para criar um de raridade maior  
-- [ ] Dungeons com múltiplos andares  
-- [ ] Multiplicidade de inimigos e balanceamento de combate  
-- [ ] Salvamento automático ao final de cada luta  
-- [ ] Sistema de habilidades ativas e passivas  
+- [ ] Crafting
+- [ ] Balanceamento de Combate e XP
+- [ ] Menu de Configurações
+- [ ] Salvamento automático ao final de cada luta (Habilitável)
+- [ ] Sistema de habilidades ativas e passivas
+- [ ] 
 
 ---
 
