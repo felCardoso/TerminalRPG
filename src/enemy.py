@@ -95,8 +95,8 @@ class Dungeon:
             self.enemies.remove(enemy)
 
     def remove_boss(self):
-        if self.boss:
-            self.boss = None
+        """Remove o boss da masmorra"""
+        self.boss = None
 
     # Boolean methods to check if the dungeon is empty or has a boss
     def has_boss(self) -> bool:
@@ -492,10 +492,10 @@ BOSS_LEGENDARY_ITEMS = {
 }
 
 # Chance base de encontrar um item ao explorar
-BASE_ITEM_CHANCE = 20  # 20% de chance base
+COMM_ITEM_CHANCE = 50  # 50% de chance base
 
 # Chance de encontrar itens raros
-RARE_ITEM_CHANCE = 10  # 10% de chance de encontrar item raro
+RARE_ITEM_CHANCE = 15  # 10% de chance de encontrar item raro
 
 # Chance de encontrar itens épicos
 EPIC_ITEM_CHANCE = 5  # 5% de chance de encontrar item épico
