@@ -1,466 +1,378 @@
-from src.player import Player
+from src.menus import MainMenu, AdventureMenu, DungeonMenu, HouseMenu, DungeonsMenu
 from src.enemy import (
     Enemy,
     Boss,
     DUNGEON_LEVELS,
     DUNGEON_ENEMIES,
     DUNGEON_ITEMS,
-    BASE_ITEM_CHANCE,
-    RARE_ITEM_CHANCE,
-    EPIC_ITEM_CHANCE,
-    LEGENDARY_ITEM_CHANCE,
 )
-from src.utils import Colors, SaveManager, clear_screen, type_text, roll_check, gen_shop
+from src.utils import (
+    C,
+    SaveManager,
+    clear_screen,
+    show_intro,
+    type_text,
+    title_text,
+    roll_check,
+    gen_shop,
+    progress_bar,
+    INVALID_CHOICE,
+    PRESS_ENTER,
+)
+from src.player import Player
+from src.house import House
 from src.fight import Fight
 from time import sleep
-from src.house import House
+import json
 
 sm = SaveManager()
 
 
-def main_menu():
-    while True:
+class Game:
+    def __init__(self):
+        self.main_menu = MainMenu(self)
+
+    def run(self):
+        # show_intro()
+        self.main_menu.run(menu=True)
+
+    def new_game(self):
         clear_screen()
-        print(f"{Colors.MAG}🎮 DUNGEON AWAKENING RPG\n")
-        print(f"{Colors.WHI}[1] Novo Jogo")
-        print("[2] Continuar")
-        print("[3] Sair")
-        i = input("\nEscolha uma opção:\n> ")
-
-        if i == "1":
-            clear_screen()
-            slot = sm.select_slot(new=True)
-            if slot:
-                new_game(slot)
-        elif i == "2":
-            clear_screen()
-            slot = sm.select_slot(new=False)
-            if slot:
-                continue_game(slot)
-        elif i == "3":
-            clear_screen()
-            type_text("Até logo, caçador!", color=Colors.RED)
-            sleep(1.5)
-            print(f"{Colors.RESET}", end="")
-            clear_screen()
-            break
-        else:
-            clear_screen()
-            print(f"{Colors.RED}[x] Escolha inválida!")
-            sleep(1)
-            input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
-
-
-def new_game(slot_file):
-    clear_screen()
-    name = input("Digite o nome do seu personagem:\n> ")
-    player = Player(name)
-    sm.save(player, slot_file)
-    start_adventure(player, slot_file)
-
-
-def continue_game(slot_file):
-    try:
-        data = sm.load(slot_file)
-        player = Player.from_dict(data)
-        start_adventure(player, slot_file)
-    except FileNotFoundError:
-        print(f"{Colors.RED}[x] Arquivo de save não encontrado!\n")
-        sleep(1)
-        input(f"{Colors.LBLU}[i] Pressione Enter para voltar ao menu principal.")
-        main_menu()
-
-
-def start_adventure(player, slot_file):
-    while True:
+        slot = sm.select_slot(new=True)
         clear_screen()
-        print(f"{player.name} entra na dungeon...\n")
-        print("O que você deseja fazer?")
-        print(f"{Colors.LBLU}1. Dungeons")
-        print(f"2. Ver status do personagem")
-        print(f"3. Loja")
-        print(f"4. Inventário")
-        print(f"5. Minha Casa")
-        print(f"6. Salvar e sair")
-        choice = input("> ")
+        name = input(f"\n{C.BLA}Enter your character's name:\n{C.WHI}> {C.BLA}")
+        player = Player(name)
+        if slot:
+            sm.save(player, slot)
+            self.start_adventure(player, slot)
 
-        if choice == "1":
-            explore_dungeon(player)
-        elif choice == "2":
-            clear_screen()
-            print(player)
-            input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
-        elif choice == "3":
-            shop_menu(player)
-        elif choice == "4":
-            player.show_inventory(True)
-        elif choice == "5":
-            house_menu(player)
-        elif choice == "6":
-            clear_screen()
-            sm.save(player, slot_file)
-            print("Saindo para o menu principal...")
-            sleep(1)
-            break
-        else:
-            clear_screen()
-            print(f"{Colors.RED}[x] Escolha inválida!")
-
-
-def shop_menu(player):
-    clear_screen()
-    # Gerar itens aleatórios para a loja
-    shop_items = gen_shop()
-
-    while True:
-        print(f"{Colors.MAG}🏪 Bem-vindo à Loja!")
-        print(f"{Colors.GRE}Moedas disponíveis: {player.coins}")
-        print(f"{Colors.WHI}Itens disponíveis para compra:")
-
-        # Agrupar itens por categoria
-        items_by_category = {}
-        for item in shop_items:
-            if item["type"] not in items_by_category:
-                items_by_category[item["type"]] = []
-            items_by_category[item["type"]].append(item)
-
-        # Exibir itens por categoria
-        item_count = 1
-        for category, items in items_by_category.items():
-            print(f"\n{Colors.CYA}{category.upper()}:")
-            for item in items:
-                rarity_color = Colors.WHI
-                if item.get("rarity") == "raro":
-                    rarity_color = Colors.MAG
-                elif item.get("rarity") == "épico":
-                    rarity_color = Colors.RED
-                print(
-                    f"[{item_count}] {rarity_color}{item['name']} - {item['price']} moedas"
-                )
-                item_count += 1
-
-        print(f"\n{Colors.LBLU}[0] Sair da loja")
-        choice = input("\nEscolha um item para comprar (número):\n> ")
-
-        if choice == "0" or choice == "":
-            clear_screen()
-            print(f"{Colors.GRE}Obrigado por visitar a loja!")
-            sleep(1.5)
-            break
-
-        try:
-            choice = int(choice) - 1
-            if 0 <= choice < len(shop_items):
-                item = shop_items[choice]
-                if player.coins >= item["price"]:
-                    player.coins -= item["price"]
-                    player.add_item(item, item["type"])
-                    print(f"{Colors.GRE}Você comprou {item['name']}!")
-                    if item.get("rarity") == "raro":
-                        print(f"{Colors.MAG}✨ É um item raro!")
-                    elif item.get("rarity") == "épico":
-                        print(f"{Colors.RED}🔥 É um item épico!")
-                else:
-                    print(f"{Colors.RED}[x] Você não tem moedas suficientes!")
-            else:
-                print(f"{Colors.RED}[x] Escolha inválida!")
-        except ValueError:
-            print(f"{Colors.RED}[x] Entrada inválida!")
-
-        input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
+    def continue_game(self):
         clear_screen()
+        slot = sm.select_slot(new=False)
+        if slot:
+            try:
+                data = sm.load(slot)
+                player = Player.from_dict(data)
+                self.start_adventure(player, slot)
+            except (FileNotFoundError, json.JSONDecodeError) as e:
+                clear_screen()
+                type_text(f"{str(e)}", color=C.RED)
+                sleep(1.5)
 
+    def quit_game(self):
+        clear_screen()
+        type_text("Goodbye, hunter!", color=C.RED)
+        sleep(1.5)
+        print(f"{C.RESET}", end="")
+        clear_screen()
+        exit()
 
-def explore_dungeon(player):
-    clear_screen()
-    print(f"{Colors.MAG}🌌 Escolha uma Dungeon para explorar:")
-    for level, dungeon in DUNGEON_LEVELS.items():
-        print(
-            f"{level}. {dungeon.name} (Nível {dungeon.level}) - {dungeon.level * 2} dias de viagem"
-        )
-    print("0. Voltar")
-    choice = input("> ")
+    def start_adventure(self, player, slot_file):
+        adventure_menu = AdventureMenu(self, player, slot_file)
+        adventure_menu.run()
 
-    try:
-        choice = int(choice)
-        if choice == 0:
-            return
-        if choice in DUNGEON_LEVELS:
-            dungeon = DUNGEON_LEVELS[choice]
-            travel_time = int(dungeon.level * 48)  # 2 dias por nível
+    def explore_dungeon(self, player):
+        dungeons_menu = DungeonsMenu(self, player)
+        dungeons_menu.run(True)
+
+    def travel_dungeon(self, player, level):
+        if level and level in DUNGEON_LEVELS:
+            dungeon = DUNGEON_LEVELS[level]
+            travel_time = int(dungeon.level * 48)  # 2 days per level
             clear_screen()
             print(
-                f"{Colors.LBLU}🛤️ Você começou sua jornada para {Colors.CYA}{dungeon.name}{Colors.LBLU}. Isso levará {int(travel_time / 24)} dias."
+                f"{C.BLUL}You started your journey to {C.CYA}{dungeon.name}{C.BLUL}. This will take {int(travel_time / 24)} days."
             )
             player.pass_time(travel_time)
 
-            # Criar barra de progresso
-            bar_length = 50
-            for i in range(travel_time):
-                progress = (i + 1) / travel_time
-                filled_length = int(bar_length * progress)
-                bar = f"{Colors.LBLU}[{'▮' * filled_length}{' ' * (bar_length - filled_length)}] {int(progress * 100)}%"
-                print(f"\r{bar}", end="")
-                sleep(0.15)
-            print(f"\n{Colors.GRE}Você chegou na {dungeon.name}!")
-            start_dungeon(player, dungeon)
-        else:
-            print(f"{Colors.RED}[x] Dungeon inválida!")
-    except ValueError:
-        print(f"{Colors.RED}[x] Entrada inválida!")
-    input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
+            # Create progress bar
+            progress_bar(travel_time)
+            clear_screen()
+            type_text(f"\nYou arrived at {dungeon.name}!", C.GRE)
+            sleep(1)
 
+            self.start_dungeon(player, dungeon)
 
-def start_dungeon(player, dungeon):
-    clear_screen()
-    print(f"{Colors.MAG}🌌 Entrando na {dungeon.name}...")
-    sleep(1)
+    def start_dungeon(self, player, dungeon):
+        clear_screen()
+        type_text(f"Entering {dungeon.name}...", C.MAG)
+        sleep(1)
 
-    # Criar novos inimigos para a dungeon baseado no nível
-    dungeon.enemies = []
-    for enemy in DUNGEON_ENEMIES[dungeon.level]:
-        if isinstance(enemy, Boss):
-            dungeon.boss = Boss(
-                enemy.name,
-                enemy.hp,
-                enemy.attack,
-                enemy.xp_reward,
-                enemy.coin_reward,
-                enemy.defense,
-            )
-            # Adicionar drops lendários ao chefe
-            chance = roll_check(mod=0, sides=100)
-            if chance <= LEGENDARY_ITEM_CHANCE:
-                # Filtrar itens lendários
-                legendary_items = [
-                    item
-                    for item in DUNGEON_ITEMS[dungeon.level]
-                    if item.get("rarity") == "lendário"
-                ]
-                if legendary_items:
-                    dungeon.boss.set_item(legendary_items)
-            elif chance <= EPIC_ITEM_CHANCE:
-                # Filtrar itens épicos
-                epic_items = [
-                    item
-                    for item in DUNGEON_ITEMS[dungeon.level]
-                    if item.get("rarity") == "épico"
-                ]
-                if epic_items:
-                    dungeon.boss.set_item(epic_items)
-            elif chance <= RARE_ITEM_CHANCE:
-                # Filtrar itens raros
-                rare_items = [
-                    item
-                    for item in DUNGEON_ITEMS[dungeon.level]
-                    if item.get("rarity") == "raro"
-                ]
-                if rare_items:
-                    dungeon.boss.set_item(rare_items)
-            elif chance <= BASE_ITEM_CHANCE:
-                # Filtrar itens comuns
-                common_items = [
-                    item
-                    for item in DUNGEON_ITEMS[dungeon.level]
-                    if item.get("rarity") == "comum"
-                ]
-                if common_items:
-                    dungeon.boss.set_item(common_items)
-        else:
-            dungeon.enemies.append(
-                Enemy(
+        # Create new enemies for the dungeon based on level
+        dungeon.enemies = []
+        for enemy in DUNGEON_ENEMIES[dungeon.level]:
+            if isinstance(enemy, Boss):
+                dungeon.boss = Boss(
                     enemy.name,
                     enemy.hp,
                     enemy.attack,
                     enemy.xp_reward,
                     enemy.coin_reward,
                     enemy.defense,
-                    enemy.agility,
                 )
-            )
-
-    # Verificar se a dungeon está vazia
-    if not dungeon.enemies and not dungeon.has_boss():
-        print(f"{Colors.YEL}⚠️ Esta dungeon está vazia!")
-        sleep(1)
-        return
-
-    while True:
-        clear_screen()
-        print(f"{Colors.MAG}===== {dungeon.name} =====")
-        print(f"{Colors.WHI}O que você deseja fazer?")
-        print(f"{Colors.LBLU}1. Explorar mais")
-        print(f"2. Ver status")
-        print(f"3. Usar item")
-        print(f"4. Voltar")
-        choice = input("> ")
-
-        if choice == "1":
-            # Chance de encontrar inimigo ou chefe
-            roll = roll_check()
-            if roll > 15:
-                if dungeon.has_boss() and roll > 18:
-                    print(f"{Colors.RED}⚠️ Você encontrou o chefe da dungeon!")
-                    sleep(1)
-                    fight = Fight()
-                    fight.start(player, dungeon.boss)
-                    if not player.is_alive():
-                        return
-                    if not dungeon.boss.is_alive():
-                        print(
-                            f"{Colors.MAG}🎉 Você derrotou o chefe da {dungeon.name}!"
-                        )
-                        # Verificar drops lendários
-                        if dungeon.boss.item_reward:
-                            for item in dungeon.boss.item_reward:
-                                print(
-                                    f"{Colors.MAG}✨ Você encontrou um item lendário: {item['name']}!"
-                                )
-                                player.add_item(item, item["type"])
-                        sleep(1)
-                        dungeon.remove_boss()
-                else:
-                    enemy = dungeon.get_enemy()
-                    if enemy:
-                        fight = Fight()
-                        fight.start(player, enemy)
-                        if not player.is_alive():
-                            return
+                # Add legendary drops to the boss
+                chance = roll_check(mod=0, sides=100)
+                if chance == 1:
+                    legendary_items = [
+                        item
+                        for item in DUNGEON_ITEMS[dungeon.level]
+                        if item.get("rarity") == "legendary"
+                    ]
+                    if legendary_items:
+                        dungeon.boss.set_item(legendary_items)
+                elif chance <= 10:
+                    epic_items = [
+                        item
+                        for item in DUNGEON_ITEMS[dungeon.level]
+                        if item.get("rarity") == "epic"
+                    ]
+                    if epic_items:
+                        dungeon.boss.set_item(epic_items)
+                elif chance <= 20:
+                    rare_items = [
+                        item
+                        for item in DUNGEON_ITEMS[dungeon.level]
+                        if item.get("rarity") == "rare"
+                    ]
+                    if rare_items:
+                        dungeon.boss.set_item(rare_items)
+                elif chance <= 50:
+                    common_items = [
+                        item
+                        for item in DUNGEON_ITEMS[dungeon.level]
+                        if item.get("rarity") == "common"
+                    ]
+                    if common_items:
+                        dungeon.boss.set_item(common_items)
             else:
-                # Chance de encontrar item
-                if roll_check(sides=100) > (100 - BASE_ITEM_CHANCE):
-                    # Chance de encontrar item raro
-                    if roll_check(sides=100) > (100 - RARE_ITEM_CHANCE):
-                        items = [
-                            item
-                            for item in DUNGEON_ITEMS[dungeon.level]
-                            if item.get("rarity") == "raro"
-                        ]
-                    else:
-                        items = [
-                            item
-                            for item in DUNGEON_ITEMS[dungeon.level]
-                            if item.get("rarity") != "raro"
-                        ]
-
-                    # Calcular chance total de drop
-                    total_chance = sum(item["chance"] for item in items)
-                    roll = roll_check(mod=0, sides=total_chance)
-
-                    # Encontrar o item baseado na chance
-                    current_chance = 0
-                    for item in items:
-                        current_chance += item["chance"]
-                        if roll <= current_chance:
-                            print(
-                                f"{Colors.GRE}🎁 Você encontrou um item: {item['name']}!"
+                chance = roll_check(sides=3)
+                if chance == 1:
+                    for i in range(1):
+                        dungeon.enemies.append(
+                            Enemy(
+                                enemy.name,
+                                enemy.hp,
+                                enemy.attack,
+                                enemy.xp_reward,
+                                enemy.coin_reward,
+                                enemy.defense,
+                                enemy.agility,
                             )
-                            if item.get("rarity") == "raro":
-                                print(f"{Colors.MAG}✨ É um item raro!")
+                        )
+                        i += 1
+                elif chance == 2:
+                    dungeon.enemies.append(
+                        Enemy(
+                            enemy.name,
+                            enemy.hp,
+                            enemy.attack,
+                            enemy.xp_reward,
+                            enemy.coin_reward,
+                            enemy.defense,
+                            enemy.agility,
+                        )
+                    )
+
+        # Check if dungeon is empty
+        if not dungeon.enemies and not dungeon.has_boss():
+            print(f"{C.YEL}⚠️ This dungeon is empty!")
+            sleep(1)
+            return
+
+        dungeon_menu = DungeonMenu(self, player, dungeon)
+        dungeon_menu.run()
+
+    def explore_dungeon_area(self, player, dungeon):
+        # Chance to find enemy or boss
+        roll = roll_check(mod=0, sides=100)
+        input(f"{C.WHI}Chance: {C.BLA}{roll}")
+        if roll >= 75:  # 25% Chance to find an enemy
+            if dungeon.has_boss() and roll >= 95:
+                print(f"{C.RED}⚠️ You found the dungeon boss!")
+                sleep(1)
+                fight = Fight()
+                fight.start(player, dungeon.boss)
+                if not player.is_alive():
+                    player.game_over()
+                if not dungeon.boss.is_alive():
+                    print(f"{C.MAG}🎉 You defeated the boss of {dungeon.name}!")
+                    # Check legendary drops
+                    if dungeon.boss.item_reward:
+                        for item in dungeon.boss.item_reward:
+                            print(
+                                f"{C.MAG}✨ You found a legendary item: {item['name']}!"
+                            )
                             player.add_item(item, item["type"])
-                            break
                     sleep(1)
-                else:
-                    print(f"{Colors.GRE}Você explorou a área e não encontrou nada...")
-                    sleep(1)
+                    dungeon.remove_boss()
+            else:
+                enemy = dungeon.get_enemy()
+                if enemy:
+                    fight = Fight()
+                    fight.start(player, enemy)
+                    if not player.is_alive():
+                        player.game_over()
+                    if not enemy.is_alive():
+                        dungeon.remove_enemy(enemy)
+        elif roll >= 60:  # 15% Chance to find an item
+            chance = roll_check(sides=100)
+            if chance > (95):  # 5% EPIC
+                items = [
+                    item
+                    for item in DUNGEON_ITEMS[dungeon.level]
+                    if item.get("rarity") == "epic"
+                ]
+            elif chance > (80):  # 15% RARE
+                items = [
+                    item
+                    for item in DUNGEON_ITEMS[dungeon.level]
+                    if item.get("rarity") == "rare"
+                ]
+            else:  # 80% COMMON
+                items = [
+                    item
+                    for item in DUNGEON_ITEMS[dungeon.level]
+                    if item.get("rarity") != "common"
+                ]
 
-        elif choice == "2":
-            clear_screen()
-            print(player)
-            input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
+            # Calculate total drop chance
+            total_chance = sum(item["chance"] for item in items)
 
-        elif choice == "3":
-            player.show_inventory(use=True)
+            # Verificar se há itens disponíveis e se total_chance é maior que 0
+            if items and total_chance > 0:
+                roll = roll_check(mod=0, sides=total_chance)
 
-        elif choice == "4":
-            clear_screen()
-            print(f"{Colors.GRE}Voltando para a cidade...")
-            sleep(1)
-            return
-
+                # Find item based on chance
+                current_chance = 0
+                for item in items:
+                    current_chance += item["chance"]
+                    if roll <= current_chance:
+                        print(f"{C.GRE}🎁 You found an item: {item['name']}!")
+                        if item.get("rarity") == "rare":
+                            print(f"{C.MAG}✨ It's a rare item!")
+                        player.add_item(item, item["type"])
+                        break
+                sleep(1)
+            else:
+                print(f"{C.GRE}You explored the area and found nothing...")
+                sleep(1)
+        # elif roll >= 50: # TODO: 10% Chance to ???
         else:
-            print(f"{Colors.RED}[x] Escolha inválida!")
+            print(f"{C.GRE}You explored the area and found nothing...")
             sleep(1)
 
-
-def house_menu(player):
-    if not hasattr(player, "house"):
-        player.house = House(player)
-
-    while True:
+    def shop_menu(self, player):
         clear_screen()
-        print(f"{Colors.MAG}🏠 Minha Casa")
-        print(f"{Colors.WHI}O que você deseja fazer?")
-        print(f"{Colors.LBLU}1. Ver status da casa")
-        print(f"2. Melhorar salas")
-        print(f"3. Preparar poções")
-        print(f"4. Criar itens")
-        print(f"5. Dormir")
-        print(f"6. Colher do jardim")
-        print(f"7. Voltar")
-        choice = input("> ")
+        shop_items = gen_shop()
 
-        if choice == "1":
-            player.house.show_status()
-        elif choice == "2":
-            clear_screen()
-            print(f"{Colors.MAG}Melhorar Salas")
-            print(f"{Colors.WHI}Qual sala você deseja melhorar?")
-            for room, level in player.house.rooms.items():
-                cost = player.house.upgrade_costs[room] * level
-                print(f"{Colors.LBLU}{room.title()}: Nível {level} - {cost} moedas")
-            room = input("\nDigite o nome da sala (ou Enter para voltar):\n> ").lower()
-            if room:
-                player.house.upgrade_room(room)
-                input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
-        elif choice == "3":
-            clear_screen()
-            print(f"{Colors.MAG}Preparar Poções")
-            print(f"{Colors.WHI}Qual poção você deseja preparar?")
-            for recipe in player.house.recipes["potions"]:
-                ingredients = ", ".join(
-                    player.house.recipes["potions"][recipe]["ingredients"]
-                )
-                print(f"{Colors.LBLU}{recipe}: {ingredients}")
-            recipe = input("\nDigite o nome da poção (ou Enter para voltar):\n> ")
-            if recipe:
-                player.house.brew_potion(recipe)
-                input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
-        elif choice == "4":
-            clear_screen()
-            print(f"{Colors.MAG}Criar Itens")
-            print(f"{Colors.WHI}Qual item você deseja criar?")
-            for recipe in player.house.recipes["crafting"]:
-                ingredients = ", ".join(
-                    player.house.recipes["crafting"][recipe]["ingredients"]
-                )
-                print(f"{Colors.LBLU}{recipe}: {ingredients}")
-            recipe = input("\nDigite o nome do item (ou Enter para voltar):\n> ")
-            if recipe:
-                player.house.craft_item(recipe)
-                input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
-        elif choice == "5":
-            clear_screen()
-            print(f"{Colors.MAG}Dormir")
-            hours = input(f"{Colors.WHI}Quantas horas você deseja dormir?\n> ")
+        while True:
+            # Display shop header
+            title_text("Shop")
+
+            # Organize items by category
+            items_by_category = {
+                "potions": [],
+                "weapons": [],
+                "armors": [],
+                "items": [],
+            }
+            for item in shop_items:
+                items_by_category[item["type"]].append(item)
+
+            # Display items
+            i = 1
+            item_indices = []
+            for category in ["potions", "weapons", "armors", "items"]:
+                if not items_by_category[category]:
+                    continue
+
+                print(f"\n{C.CYA}{C.NEG}{category.capitalize()}:{C.RESET}")
+                for item in items_by_category[category]:
+                    item_indices.append(shop_items.index(item))
+
+                    # Determine rarity color
+                    rarity_color = C.WHI
+                    if item.get("rarity") == "rare":
+                        rarity_color = C.GRE
+                    elif item.get("rarity") == "epic":
+                        rarity_color = C.MAG
+                    elif item.get("rarity") == "legendary":
+                        rarity_color = C.YEL
+
+                    # Display item
+                    status = (
+                        f"- {C.BLA}{item['price']}c"
+                        if item.get("available", True)
+                        else f"- {C.REDL}SOLD OUT"
+                    )
+                    print(
+                        f"{C.WHI}[{C.BLA}{i}{C.WHI}]{C.RESET} {rarity_color}{item['name']} {C.RESET}{status}"
+                    )
+                    i += 1
+
+            # Exit option
+            print(f"\n{C.WHI}[{C.BLA}{0}{C.WHI}] {C.BLA}Exit")
+            print(f"\n{C.BLA}Available coins: {C.GRE}{player.coins}c")
+            print(f"\n{C.BLUL}Press [Enter] to exit")
+            choice = input("\nChoose an item to buy (number):\n> ")
+
+            # Exit shop
+            if choice == "0" or choice == "":
+                clear_screen()
+                type_text("Thanks for visiting the shop!", C.GRE)
+                sleep(1)
+                break
+
+            # Process choice
             try:
-                hours = int(hours)
-                if hours > 0:
-                    player.house.sleep(hours)
+                choice = int(choice)
+                if not (1 <= choice <= len(item_indices)):
+                    print()
+                    continue
+
+                item_index = item_indices[choice - 1]
+                item = shop_items[item_index]
+
+                if not item.get("available", True):
+                    print(f"{C.RED}[x] This item is sold out!")
+                elif player.coins < item["price"]:
+                    print(f"{C.RED}[x] You don't have enough coins!")
                 else:
-                    print(f"{Colors.RED}[x] Horas inválidas!")
+                    player.coins -= item["price"]
+                    player.add_item(item, item["type"])
+                    item["available"] = False
+                    print(f"{C.GRE}You bought {item['name']}!")
+
+                    if item.get("rarity") == "rare":
+                        print(f"{C.MAG}✨ It's a rare item!")
+                    elif item.get("rarity") == "epic":
+                        print(f"{C.RED}🔥 It's an epic item!")
+
             except ValueError:
-                print(f"{Colors.RED}[x] Entrada inválida!")
-            input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
-        elif choice == "6":
-            player.house.garden_harvest()
-            input(f"{Colors.LBLU}[i] Pressione Enter para continuar.")
-        elif choice == "7":
-            return
+                print(f"{C.RED}[x] Invalid input!")
+
+            input(f"{C.BLUL}[i] Press Enter to continue.")
+            clear_screen()
+
+    def house_menu(self, player):
+        if not hasattr(player, "house"):
+            player.house = House(player)
+        house_menu = HouseMenu(player)
+        house_menu.run()
+
+    def save_game(self, player, slot_file):
+        sm.save(player, slot_file)
+
+    def exit_menu(self, player, slot_file):
+        clear_screen()
+        type_text(f"Save before exit?", color=C.CYA)
+        i = input(" [y/n]\n>")
+        if i.lower() == "y" or i.lower() == "s" or i == "1":
+            sm.save(player, slot_file)
         else:
-            print(f"{Colors.RED}[x] Escolha inválida!")
-            sleep(1)
+            self.main_menu.run()
 
 
 if __name__ == "__main__":
-    main_menu()
+    game = Game()
+    game.run()
