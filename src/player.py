@@ -1,4 +1,4 @@
-from src.utils import ABILITIES, Colors, clear_screen
+from src.utils import ABILITIES, C, clear_screen, type_text, title_text, option_text
 from time import sleep
 
 
@@ -82,13 +82,13 @@ class Player:
         try:
             time = int(hours)
         except ValueError:
-            print(f"{Colors.RED}[x] Invalid input.")
+            print(f"{C.RED}[x] Invalid input.")
             return
         if time <= 0:
-            print(f"{Colors.RED}[x] Invalid sleep hours.")
+            print(f"{C.RED}[x] Invalid sleep hours.")
             return
         if time > 24:
-            print(f"{Colors.RED}[x] You can't sleep more than 24 hours.")
+            print(f"{C.RED}[x] You can't sleep more than 24 hours.")
             return
         self.pass_time(time)
         self.hp += time * self.attributes["VIT"] * 2
@@ -98,9 +98,9 @@ class Player:
         if self.mp > self.mp_max:
             self.mp = self.mp_max
         for i in range(time):
-            print(f"{Colors.LBLU}⏳ Sleeping... {Colors.RESET}", end="\r")
+            print(f"{C.BLUL}⏳ Sleeping... {C.RESET}", end="\r")
             sleep(1)
-        input(f"{Colors.LBLU}[i] Pressione Enter para continuar")
+        input(f"{C.BLUL}[i] Pressione Enter para continuar")
 
     # Add methods
     def add_xp(self, amount):
@@ -117,12 +117,18 @@ class Player:
             self.hp_max = self.attributes["VIT"] * 5
             self.mp_max = self.attributes["INT"] * 10
 
-            self.hp = self.hp * int(
-                (self.hp_max / self.hp)
-            )  # Keep the proportional amount of hp
-            self.mp = self.mp * int(
-                (self.mp_max / self.mp)
-            )  # Keep the proportional amount of mp
+            # Atualizar HP e MP mantendo a proporção
+            if self.hp > 0 and self.hp_max > 0:
+                hp_ratio = self.hp / self.hp_max
+                self.hp = int(self.hp_max * hp_ratio)
+            else:
+                self.hp = self.hp_max
+
+            if self.mp > 0 and self.mp_max > 0:
+                mp_ratio = self.mp / self.mp_max
+                self.mp = int(self.mp_max * mp_ratio)
+            else:
+                self.mp = self.mp_max
 
             print(f"⭐ {self.name} leveled up to level {self.level}!")
 
@@ -132,7 +138,7 @@ class Player:
 
     def add_item(self, item, category):
         if category not in self.inventory:
-            print(f"{Colors.RED}[x] Invalid category.")
+            print(f"{C.RED}[x] Invalid category.")
             return
         if category == "weapons":
             self.inventory["weapons"].append(item)
@@ -161,150 +167,190 @@ class Player:
         for ability in self.abilities.items():
             if "dmg" in ability:
                 print(
-                    f"{Colors.LBLU}  {ability} - Dano: {ability['dmg']} | {ability['cost']} MP"
+                    f"{C.BLUL}  {ability} - Dano: {ability['dmg']} | {ability['cost']} MP"
                 )
             elif "heal" in ability:
                 print(
-                    f"{Colors.LBLU}  {ability} - Cura: {ability['heal']} | {ability['cost']} MP"
+                    f"{C.BLUL}  {ability} - Cura: {ability['heal']} | {ability['cost']} MP"
                 )
             else:
                 print(
-                    f"{Colors.LBLU}  {ability} - {ability['xp']}/{ability['xp_max']} | {ability['cost']} MP"
+                    f"{C.BLUL}  {ability} - {ability['xp']}/{ability['xp_max']} | {ability['cost']} MP"
                 )
             i += 1
         if i == 0:
-            print(f"{Colors.RED}  Nenhuma habilidade aprendida.")
-        print(f"{Colors.RESET}")
+            print(f"{C.RED}  Nenhuma habilidade aprendida.")
+        print(f"{C.RESET}")
 
     def show_inventory(self, use=False):
         clear_screen()
-        print(f"{Colors.LBLU}==== Inventory ====")
-        print(f"{Colors.GRE}  Balance: {self.coins}c")
+        title_text("Inventory")
+        print(f"{C.BLA}  Balance: {C.GRE}{self.coins}c\n")
 
         self.list_potions()  # Exibir poções
         self.list_items()  # Exibir itens
         self.list_weapons()  # Exibir armas
         self.list_armor()  # Exibir armaduras
 
-        print(f"{Colors.WHI}====================")
+        print(f"{C.WHI}------------------")
 
         if use:
-            opt = input(f"{Colors.LBLU}Would you like to use an item? (y/n):\n>")
-            if opt.lower() == "y" or opt.lower() == "yes" or opt.lower() == "s":
-                print(f"{Colors.LBLU}Select a category to use an item:\n")
-                print(f"{Colors.GRE}[1] Potions")
-                print(f"{Colors.CYA}[2] Items")
-                print(f"{Colors.MAG}[3] Weapons")
-                print(f"{Colors.RED}[4] Armor")
-                category = input(f"{Colors.CYA}\n> ")
 
-                if category == "0":
+            opt = input(
+                f"\n{C.BLA}Would you like to use an item? (y/n):\n{C.WHI}> {C.BLA}"
+            )
+            clear_screen()
+            if (
+                opt.lower() == "y"
+                or opt.lower() == "yes"
+                or opt.lower() == "s"
+                or opt == "1"
+            ):
+                title_text("Inventory")
+                print()
+                option_text(1, "Potions")
+                option_text(2, "Items")
+                option_text(3, "Weapons")
+                option_text(4, "Armor")
+                category = int(input(f"\n{C.BLA}Choose a category:\n{C.WHI}> {C.BLA}"))
+
+                if category == 0:
                     return
-                elif category == "1":
+                elif category == 1:
                     self.list_potions()
-                    item_index = input("Choose a potion by its number:\n> ")
+                    item_index = int(
+                        input(
+                            f"\n{C.BLA}Choose a potion by its number:\n{C.WHI}> {C.BLA}"
+                        )
+                    )
                     try:
                         item_index = int(item_index) - 1
                         if 0 <= item_index < len(self.inventory["potions"]):
                             selected_item = self.inventory["potions"][item_index]
                             self.use_item(selected_item, player=self)
                         else:
-                            print(f"{Colors.RED}[x] Invalid potion number.")
+                            print(f"{C.RED}[x] Invalid potion number.")
                     except ValueError:
-                        print(f"{Colors.RED}[x] Invalid input.")
-                elif category == "2":
+                        print(f"{C.RED}[x] Invalid input.")
+                elif category == 2:
                     self.list_items()
-                    item_index = input("Choose an item by its number:\n> ")
+                    item_index = int(
+                        input(
+                            f"\n{C.BLA}Choose an item by its number:\n{C.WHI}> {C.BLA}"
+                        )
+                    )
                     try:
                         item_index = int(item_index) - 1
                         if 0 <= item_index < len(self.inventory["items"]):
                             selected_item = self.inventory["items"][item_index]
                             self.use_item(selected_item, player=self)
                         else:
-                            print(f"{Colors.RED}[x] Invalid item number.")
+                            print(f"{C.RED}[x] Invalid item number.")
                     except ValueError:
-                        print(f"{Colors.RED}[x] Invalid input.")
-                elif category == "3":
+                        print(f"{C.RED}[x] Invalid input.")
+                elif category == 3:
                     self.list_weapons()
-                    item_index = input("Choose a weapon by its number:\n> ")
+                    item_index = int(
+                        input(
+                            f"\n{C.BLA}Choose a weapon by its number:\n{C.WHI}> {C.BLA}"
+                        )
+                    )
                     try:
                         item_index = int(item_index) - 1
                         if 0 <= item_index < len(self.inventory["weapons"]):
                             selected_item = self.inventory["weapons"][item_index]
                             self.equip_weapon(selected_item)
                         else:
-                            print(f"{Colors.RED}[x] Invalid weapon number.")
+                            print(f"{C.RED}[x] Invalid weapon number.")
                     except ValueError:
-                        print(f"{Colors.RED}[x] Invalid input.")
-                elif category == "4":
+                        print(f"{C.RED}[x] Invalid input.")
+                elif category == 4:
                     self.list_armor()
-                    item_index = input("Choose an armor by its number:\n> ")
+                    item_index = int(
+                        input(
+                            f"\n{C.BLA}Choose an armor by its number:\n{C.WHI}> {C.BLA}"
+                        )
+                    )
                     try:
                         item_index = int(item_index) - 1
                         if 0 <= item_index < len(self.inventory["armors"]):
                             selected_item = self.inventory["armors"][item_index]
                             self.equip_armor(selected_item)
                         else:
-                            print(f"{Colors.RED}[x] Invalid armor number.")
+                            print(f"{C.RED}[x] Invalid armor number.")
                     except ValueError:
-                        print(f"{Colors.RED}[x] Invalid input.")
-                elif category == "5":
+                        print(f"{C.RED}[x] Invalid input.")
+                elif category == 5:
                     self.list_accessories()
-                    item_index = input("Choose an accessory by its number:\n> ")
+                    item_index = int(
+                        input(
+                            f"\n{C.BLA}Choose an accessory by its number:\n{C.WHI}> {C.BLA}"
+                        )
+                    )
                     try:
                         item_index = int(item_index) - 1
                         if 0 <= item_index < len(self.inventory["accessories"]):
                             selected_item = self.inventory["accessories"][item_index]
                             self.equip_accessory(selected_item)
                         else:
-                            print(f"{Colors.RED}[x] Invalid accessory number.")
+                            print(f"{C.RED}[x] Invalid accessory number.")
                     except ValueError:
-                        print(f"{Colors.RED}[x] Invalid input.")
+                        print(f"{C.RED}[x] Invalid input.")
                 else:
-                    print(f"{Colors.RED}[x] Invalid category!")
+                    print(f"{C.RED}[x] Invalid category!")
             elif opt.lower() == "n" or opt.lower() == "no":
-                print(f"{Colors.GRE}Exiting inventory...")
+                print(f"{C.GRE}Exiting inventory...")
                 sleep(1)
                 return
             else:
-                print(f"{Colors.RED}[x] Invalid option!")
-        print(f"{Colors.RESET}")
+                print(f"{C.RED}[x] Invalid option!")
+        print(f"{C.RESET}")
 
     def list_potions(self):
-        print(f"{Colors.WHI}  Potions:")
+        print(f"{C.WHI}  Potions:")
         potion_counts = {}
+        if not self.inventory["potions"]:
+            print(f"{C.RESET}{C.FAD}    Empty{C.RESET}")
         for potion in self.inventory["potions"]:
             potion_counts[potion["name"]] = potion_counts.get(potion["name"], 0) + 1
         for name, count in potion_counts.items():
             print(f"    {name} x{count}")
 
     def list_items(self):
-        print(f"{Colors.GRE}  Items:")
+        print(f"{C.GRE}  Items:")
         item_counts = {}
+        if not self.inventory["items"]:
+            print(f"{C.RESET}{C.FAD}    Empty{C.RESET}")
         for item in self.inventory["items"]:
             item_counts[item["name"]] = item_counts.get(item["name"], 0) + 1
         for name, count in item_counts.items():
             print(f"    {name} x{count}")
 
     def list_weapons(self):
-        print(f"{Colors.MAG}  Weapons:")
+        print(f"{C.MAG}  Weapons:")
         weapon_counts = {}
+        if not self.inventory["weapons"]:
+            print(f"{C.RESET}{C.FAD}    Empty{C.RESET}")
         for weapon in self.inventory["weapons"]:
             weapon_counts[weapon["name"]] = weapon_counts.get(weapon["name"], 0) + 1
         for name, count in weapon_counts.items():
             print(f"    {name} x{count}")
 
     def list_armor(self):
-        print(f"{Colors.CYA}  Armors:")
+        print(f"{C.CYA}  Armors:")
         armor_counts = {}
+        if not self.inventory["armors"]:
+            print(f"{C.RESET}{C.FAD}    Empty{C.RESET}")
         for armor in self.inventory["armors"]:
             armor_counts[armor["name"]] = armor_counts.get(armor["name"], 0) + 1
         for name, count in armor_counts.items():
             print(f"    {name} x{count}")
 
     def list_accessories(self):
-        print(f"{Colors.LBLU}  Accessories:")
+        print(f"{C.BLUL}  Accessories:")
         accessory_counts = {}
+        if not self.inventory["accessories"]:
+            print(f"{C.RESET}{C.FAD}    Empty{C.RESET}")
         for accessory in self.inventory["accessories"]:
             accessory_counts[accessory["name"]] = (
                 accessory_counts.get(accessory["name"], 0) + 1
@@ -320,7 +366,7 @@ class Player:
             self.inventory["weapons"].remove(weapon)
             print(f"{self.name} equipou {weapon}.")
         else:
-            print(f"{Colors.RED}[x] Arma não encontrada na mochila.")
+            print(f"{C.RED}[x] Arma não encontrada na mochila.")
 
     def equip_armor(self, armor):
         if armor in self.inventory["armors"]:
@@ -329,7 +375,7 @@ class Player:
             self.inventory["armors"].remove(armor)
             print(f"{self.name} equipou {armor}.")
         else:
-            print(f"{Colors.RED}[x] Armadura não encontrada na mochila.")
+            print(f"{C.RED}[x] Armadura não encontrada na mochila.")
 
     def equip_accessory(self, accessory):
         if accessory in self.inventory["accessories"]:
@@ -339,9 +385,9 @@ class Player:
                     self.inventory["accessories"].remove(accessory)
                     print(f"{self.name} equipou {accessory}.")
                     return
-            print(f"{Colors.RED}[x] Não há espaço para mais acessórios.")
+            print(f"{C.RED}[x] Não há espaço para mais acessórios.")
         else:
-            print(f"{Colors.RED}[x] Acessório não encontrado na mochila.")
+            print(f"{C.RED}[x] Acessório não encontrado na mochila.")
 
     # Unequip methods
     def unequip_weapon(self):
@@ -401,7 +447,7 @@ class Player:
     # Dict method
     def to_dict(self):
         data = self.__dict__.copy()
-        if hasattr(self, "house"):
+        if hasattr(self, "house") and not isinstance(self.house, dict):
             data["house"] = self.house.to_dict()
         return data
 
@@ -421,6 +467,12 @@ class Player:
             or self.equipment["accessories"][1] is not None
         )
 
+    def game_over(self):
+        clear_screen()
+        type_text("Game Over!", color=C.RED)
+        sleep(1)
+        type_text(f"Você perdeu todas as suas moedas!", color=C.RED)
+
     # Class methods
     @classmethod
     def from_dict(cls, data):
@@ -434,6 +486,7 @@ class Player:
 
     def __str__(self):
         clear_screen()
+        title_text("Player Status")
 
         # Formatar equipamento
         weapon = (
@@ -456,17 +509,17 @@ class Player:
                 accessories.append("None")
 
         return (
-            f"{Colors.CYA}👤 Name: {self.name} {Colors.RESET}| {Colors.RED}HP: [{self.hp}/{self.hp_max}]\n"
-            f"{Colors.YEL}⭐ Level: {self.level} {Colors.RESET}| {Colors.YEL}EXP: {self.xp}/{self.level * 100}\n"
-            f"{Colors.GRE}💰 Money: {self.coins}c\n"
-            f"{Colors.BLU}📊 Attributes:\n"
+            f"{C.CYA}👤 Name: {self.name} {C.RESET}| {C.RED}HP: [{self.hp}/{self.hp_max}]\n"
+            f"{C.YEL}⭐ Level: {self.level} {C.RESET}| {C.YEL}EXP: {self.xp}/{self.level * 100}\n"
+            f"{C.GRE}💰 Money: {self.coins}c\n"
+            f"{C.BLU}📊 Attributes:\n"
             f"  STR: {self.attributes['STR']}  AGI: {self.attributes['AGI']}  "
             f"VIT: {self.attributes['VIT']}  INT: {self.attributes['INT']}\n"
-            f"{Colors.WHI}🛡 Equipped:\n"
+            f"{C.WHI}🛡 Equipped:\n"
             f"  Weapon: {weapon}\n"
             f"  Armor: {armor}\n"
             f"  Accessories:\n"
             f"    1. {accessories[0]}\n"
             f"    2. {accessories[1]}\n"
-            f"{Colors.RESET}"
+            f"{C.RESET}"
         )
