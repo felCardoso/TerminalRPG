@@ -40,11 +40,17 @@ class Game:
         clear_screen()
         slot = sm.select_slot(new=True)
         clear_screen()
-        name = input(f"\n{C.BLA}Enter your character's name:\n{C.WHI}> {C.BLA}")
+        name = self.validate_name()
         player = Player(name)
         if slot:
             sm.save(player, slot)
             self.start_adventure(player, slot)
+
+    def validate_name(self):
+        name = False
+        while not name:
+            name = input(f"\n{C.BLA}Enter your character's name:\n{C.WHI}> {C.BLA}")
+            if name : return name
 
     def continue_game(self):
         clear_screen()
