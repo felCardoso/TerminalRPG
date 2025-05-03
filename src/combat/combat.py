@@ -1,9 +1,9 @@
-from src.utils import C, roll_check, clear_screen, type_text, PRESS_ENTER
+from src.utils.core import C, chance, clear_screen, type_text, title_text, PRESS_ENTER
 from random import randint, choice
 from time import sleep, time
 
 
-class Fight:
+class Combat:
     def __init__(self):
         pass
         self.flee = False
@@ -30,9 +30,10 @@ class Fight:
 
         if not player.is_alive():
             clear_screen()
-            type_text(f"💀 You were defeated by the {enemy.name}!", color=C.RED)
+            type_text(f"You were defeated by the {enemy.name}!", color=C.RED)
+            player.game_over()
             sleep(1)
-            input(f"{C.BLUL}[i] Pressione Enter para continuar.")
+            input(PRESS_ENTER)
         else:
             if self.flee:
                 return
@@ -42,7 +43,9 @@ class Fight:
                     type_text(f"You defeated the boss {enemy.name}!", color=C.MAG)
                     sleep(1)
                 else:
-                    print(f"{C.GRE}🏆 Victory! You defeated the {enemy.name}.")
+                    print(
+                        f"{C.GRE}{C.BOL}🏆 Victory! You defeated the {enemy.name}.{C.RESET}"
+                    )
                     sleep(1)
                 player.add_xp(enemy.xp_reward)
                 player.add_coin(enemy.coin_reward)
@@ -54,13 +57,13 @@ class Fight:
                         player.add_item(enemy.item_reward)
 
                     type_text("You can now continue your adventure!", color=C.GRE)
-                sleep(1)
+                sleep(0.5)
                 print()
                 input(PRESS_ENTER)
 
     def status(self, player, enemy):
-        print(f"{C.RED}\n🧟 {enemy.name}: {enemy.hp} HP")
-        print(f"{C.CYA}🧝 {player.name}: {player.hp} HP")
+        print(f"{C.RED}\n🧟 {enemy.name}{C.BLA}: {C.RED}{enemy.hp} HP")
+        print(f"{C.CYA}🧝 {player.name}{C.BLA}: {C.CYA}{player.hp} HP")
         type_text("Choose your action:", color=C.WHI)
         print(
             f"{C.WHI}[{C.BLA}1{C.WHI}] Attack {C.BLA}| {C.WHI}[{C.WHI}2{C.WHI}] Ability {C.BLA}| {C.WHI}[{C.WHI}3{C.WHI}] Item {C.BLA}| {C.WHI}[{C.WHI}4{C.WHI}] Run"
@@ -68,9 +71,9 @@ class Fight:
 
     def player_turn(self, player, enemy, turn):
         clear_screen()
-        print(f"{C.MAG}===== Turn {turn} =====")
+        title_text(turn)
         self.status(player, enemy)
-        action = input("> ")
+        action = input(f"{C.WHI}> {C.BLA}")
         if action == "1":
             self.player_attack(player, enemy)
         elif action == "2":
@@ -78,8 +81,7 @@ class Fight:
             ability = input("Choose your ability:\n> ")
             player.use_ability(num=ability, enemy=enemy)
         elif action == "3":
-            player.show_inventory()
-            item_index = input("Choose an item or potion by its number:\n> ")
+            player.show_inventory(True)
             try:
                 item_index = int(item_index) - 1
                 all_items = (
@@ -108,8 +110,8 @@ class Fight:
                 print(f"{C.RED}[x] Invalid input!")
             sleep(1)
         elif action == "4":
-            chance = roll_check(sides=100)
-            if chance >= min(player.attributes["AGI"] * 5, 80):
+            roll = chance(sides=100)
+            if roll >= min(player.attributes["AGI"] * 5, 80):
                 print(f"{C.GRE}🏃 You successfully ran away!")
                 self.flee = True
                 sleep(1)
@@ -124,7 +126,7 @@ class Fight:
 
     def enemy_turn(self, player, enemy):
         # Chance de 30% de ter que fazer um teste de reflexo
-        if roll_check(sides=100) <= min(player.attributes["AGI"], 70):
+        if chance(sides=100) <= min(player.attributes["AGI"], 70):
             if self.reflex_check():
                 print(f"{C.GRE}You dodged {enemy.name}'s attack!")
                 sleep(1)
@@ -138,7 +140,7 @@ class Fight:
         sleep(1)
 
     def player_attack(self, player, enemy):
-        base_dmg = roll_check(mod=player.attributes["STR"], sides=6)
+        base_dmg = chance(mod=player.attributes["STR"], sides=6)
         if player.has_weapon():
             weapon_dmg = player.equipment["weapon"]["effect"]["dmg"]
             base_dmg += weapon_dmg
