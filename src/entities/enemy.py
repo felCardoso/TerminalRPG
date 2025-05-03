@@ -1,5 +1,5 @@
-from src.codex import ITEM
-from src.core import chance
+# from src.utils.codex import ITEM
+from src.utils.core import chance
 from random import randint
 
 
