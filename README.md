@@ -22,20 +22,31 @@ Um RPG de texto por turnos com progressão de personagem, combates em dungeon e 
 ## 📁 Estrutura do Projeto
 
 ```
-DungeonRPG/
+TerminalRPG/
 │
-├── saves/                # Diretório de saves
+├── saves/                # Saved Games
 │
 ├── src/
-│   ├── enemy.py          # Classe Enemy e Dungeon e Subclasse Boss
-│   ├── fight.py          # Combate entre jogador e inimigo
-│   ├── house.py          # Classe House e funções da casa
-│   ├── player.py         # Classe Player e funcionalidades
-│   └── utils.py          # Funções utilitárias, SaveManager e Constantes
+│   ├── combat/           # Combat Logic
+│   │   └── combat.py
+│   │
+│   ├── entities/
+│   │   ├── enemy.py      # Enemy / Boss(Enemy)
+│   │   └── player.py     # Player / House / Room
+│   │
+│   ├── locations/
+│   │   ├── dungeon.py    # Dungeon
+│   │   └── world.py      # City / Guild / Shop / NPCs
+│   │
+│   ├── utils/
+│   │   ├── codex.py      # Codex (Items, Enemies, Dungeons, Cities, NPCs, Shops, ...)
+│   │   ├── core.py       # DungeonManager, SaveManager, Colors, Constants and General Functions
+│   │   ├── item.py       # Item / Potion(Item) / Weapon(Item) / Armor(Item) / Accessory(Item)
+│   │   └── menu.py       # Menus (BaseMenu, CityMenu, AdventureMenu, ShopMenu, ...)
 │
-├── game.py               # Menus e loop principal do jogo
+├── game.py               # Main game loop
 ├── README.md
-└── requirements.txt      # Bibliotecas necessárias
+└── requirements.txt      # Colorama install
 ```
 
 ---
