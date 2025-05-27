@@ -38,11 +38,11 @@ TerminalRPG/
 │   │   ├── dungeon.py    # Dungeon
 │   │   └── world.py      # City / Guild / Shop / NPCs
 │   │
-│   ├── utils/
-│   │   ├── codex.py      # Codex (Items, Enemies, Dungeons, Cities, NPCs, Shops, ...)
-│   │   ├── core.py       # DungeonManager, SaveManager, Colors, Constants and General Functions
-│   │   ├── item.py       # Item / Potion(Item) / Weapon(Item) / Armor(Item) / Accessory(Item)
-│   │   └── menu.py       # Menus (BaseMenu, CityMenu, AdventureMenu, ShopMenu, ...)
+│   └── utils/
+│       ├── codex.py      # Codex (Items, Enemies, Dungeons, Cities, NPCs, Shops, ...)
+│       ├── core.py       # DungeonManager, SaveManager, Colors, Constants and General Functions
+│       ├── item.py       # Item / Potion(Item) / Weapon(Item) / Armor(Item) / Accessory(Item)
+│       └── menu.py       # Menus (BaseMenu, CityMenu, AdventureMenu, ShopMenu, ...)
 │
 ├── game.py               # Main game loop
 ├── README.md
