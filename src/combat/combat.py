@@ -1,4 +1,5 @@
 from src.utils.core import C, chance, clear_screen, type_text, title_text, PRESS_ENTER
+from src.utils.codex import ITEM
 from random import randint, choice
 from time import sleep, time
 
@@ -8,9 +9,9 @@ class Combat:
         pass
         self.flee = False
 
-    def start(self, player, enemy):
+    def start(self, player, enemy, dungeon):
         clear_screen()
-        type_text(choice(RANDOM_ENCOUNTERS), color=C.REDL)
+        type_text(choice(RANDOM_ENCOUNTERS), color=C.RED)
         sleep(1.5)
 
         if enemy.is_boss:
@@ -31,9 +32,9 @@ class Combat:
         if not player.is_alive():
             clear_screen()
             type_text(f"You were defeated by the {enemy.name}!", color=C.RED)
-            player.game_over()
             sleep(1)
             input(PRESS_ENTER)
+            return False
         else:
             if self.flee:
                 return
@@ -41,12 +42,21 @@ class Combat:
                 clear_screen()
                 if enemy.is_boss:
                     type_text(f"You defeated the boss {enemy.name}!", color=C.MAG)
+                    if enemy.item_reward:
+                        for item in enemy.item_reward:
+                            print(f"{C.MAG}✨ The boss dropped: {item}!")
+                            self.player.add_item(item.id)
                     sleep(1)
+                    if dungeon:
+                        dungeon.remove_boss()
+
                 else:
                     print(
                         f"{C.GRE}{C.BOL}🏆 Victory! You defeated the {enemy.name}.{C.RESET}"
                     )
                     sleep(1)
+                    if dungeon:
+                        dungeon.remove_enemy(enemy)
                 player.add_xp(enemy.xp_reward)
                 player.add_coin(enemy.coin_reward)
                 if enemy.item_reward:
@@ -82,33 +92,6 @@ class Combat:
             player.use_ability(num=ability, enemy=enemy)
         elif action == "3":
             player.show_inventory(True)
-            try:
-                item_index = int(item_index) - 1
-                all_items = (
-                    player.inventory["potions"] + player.inventory["items"]
-                )  # Combine potions and items
-                if 0 <= item_index < len(all_items):
-                    selected_item = all_items[item_index]
-                    if "heal" in selected_item["effect"]:  # If it's a healing potion
-                        player.heal(selected_item["effect"]["heal"])
-                        print(
-                            f"{C.GRE}You used {selected_item['name']} and healed {selected_item['effect']['heal']} HP!"
-                        )
-                    elif "dmg" in selected_item["effect"]:  # If it's a damaging item
-                        enemy.take_damage(selected_item["effect"]["dmg"])
-                        print(
-                            f"{C.RED}You used {selected_item['name']} and dealt {selected_item['effect']['dmg']} damage to {enemy.name}!"
-                        )
-                    (
-                        player.inventory["potions"].remove(selected_item)
-                        if selected_item in player.inventory["potions"]
-                        else player.inventory["items"].remove(selected_item)
-                    )
-                else:
-                    print(f"{C.RED}[x] Invalid item selection!")
-            except (ValueError, IndexError):
-                print(f"{C.RED}[x] Invalid input!")
-            sleep(1)
         elif action == "4":
             roll = chance(sides=100)
             if roll >= min(player.attributes["AGI"] * 5, 80):
@@ -141,8 +124,8 @@ class Combat:
 
     def player_attack(self, player, enemy):
         base_dmg = chance(mod=player.attributes["STR"], sides=6)
-        if player.has_weapon():
-            weapon_dmg = player.equipment["weapon"]["effect"]["dmg"]
+        if player.equipment["weapon"]:
+            weapon_dmg = ITEM[player.equipment["weapon"]].damage
             base_dmg += weapon_dmg
         dmg = enemy.take_damage(base_dmg)
         print(f"{C.GRE}⚔ You hit the {enemy.name} for {dmg} damage!")
