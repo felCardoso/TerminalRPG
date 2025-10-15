@@ -23,6 +23,7 @@ class Player:
         self.hours = 0  # Count of hours in game
 
         self.location = 0  # Actual location
+        self.guild = None
 
         self.coins = 100  # Balance
         self.attributes = {"STR": 5, "AGI": 5, "VIT": 5, "INT": 5}  # Attributes
@@ -46,9 +47,10 @@ class Player:
     def take_damage(self, damage):
         df = 0
         if self.equipment["armor"] is not None:
-            df = self.equipment["armor"]["effect"]["dfc"]
+            df = ITEM[self.equipment["armor"]].defense
         if self.equipment["accessory"][0] is not None:
-            if "dfc" in self.equipment["accessory"][0]["effect"]:
+            effect = ITEM[self.equipment["accessory"][0]].effect
+            if effect == "def":
                 df += self.equipment["accessory"][0]["effect"]["dfc"]
         if self.equipment["accessory"][1] is not None:
             if "dfc" in self.equipment["accessory"][1]["effect"]:
