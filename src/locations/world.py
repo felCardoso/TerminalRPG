@@ -50,14 +50,14 @@ class Guild:  # TODO
             self.rank = "E"
         elif self.reputation <= 20 and self.player.attributes["STR"] >= 15:
             self.rank = "D"
-        elif self.reputation <= 50 and self.player.attributes["STR"] >= 20:
+        elif self.reputation <= 50 and self.player.attributes["STR"] >= 25:
             self.rank = "C"
-        elif self.reputation <= 100 and self.player.attributes["STR"] >= 25:
+        elif self.reputation <= 100 and self.player.attributes["STR"] >= 40:
             self.rank = "A"
         elif self.player:
             self.rank = "S"
 
-    def quest_list(self):
+    def quests(self):
         pass
 
     def add_gold(self):
