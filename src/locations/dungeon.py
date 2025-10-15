@@ -37,9 +37,12 @@ class Dungeon:
 
     # Method to get the first enemy in the list
     def get_enemy(self, index=0):
+        from random import randint
+
         if index == 0 and self.enemies:
-            return self.enemies[chance(0, len(self.enemies) - 1)]
+            return self.enemies[randint(0, len(self.enemies) - 1)]
         elif index < len(self.enemies):
             return self.enemies[index]
         elif index >= len(self.enemies):
-            return None
+            if self.enemies == []:
+                return
